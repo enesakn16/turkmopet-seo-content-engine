@@ -2,9 +2,9 @@
 
 Motosiklet yedek parça kataloglarında ürün adı ve slug alanlarına dokunmadan SEO içerik kalitesini analiz eden Python araç seti.
 
-## İlk modül: katalog SEO denetçisi
+## Katalog SEO denetçisi
 
-`audit_product` fonksiyonu ürün kaydını yalnızca analiz eder; ürün adı veya slug üzerinde değişiklik yapmaz. Böylece mevcut URL'ler, pazaryeri eşleşmeleri ve katalog kimliği korunur.
+`audit_product` tek ürünü, `audit_catalog` ise bütün kataloğu analiz eder. Hiçbir akış ürün adı veya slug üzerinde değişiklik yapmaz. Böylece mevcut URL'ler, pazaryeri eşleşmeleri ve katalog kimliği korunur.
 
 Kontrol edilen alanlar:
 
@@ -15,8 +15,11 @@ Kontrol edilen alanlar:
 - meta başlıkta ürün adı bağlamı
 - meta açıklamada marka bağlamı
 - açıklamada kategori bağlamı
+- katalog içindeki mükerrer slug değerleri
+- tekrar eden meta başlıklar
+- tekrar eden meta açıklamalar
 
-Sonuç olarak 0–100 kalite puanı ve alan bazlı hata listesi döner.
+Sonuç olarak ürün bazında 0–100 kalite puanı ve alan bazlı hata listesi döner.
 
 ## Kurulum
 
@@ -24,7 +27,7 @@ Sonuç olarak 0–100 kalite puanı ve alan bazlı hata listesi döner.
 python -m pip install -e .
 ```
 
-## Kullanım
+## Tek ürün kullanımı
 
 ```python
 from turkmopet_seo import ProductRecord, audit_product
@@ -45,6 +48,34 @@ for issue in result.issues:
     print(issue.severity, issue.field, issue.message)
 ```
 
+## CSV katalog analizi
+
+Girdi dosyası UTF-8 veya Excel uyumlu UTF-8 BOM olabilir ve şu kolonları içermelidir:
+
+```text
+name,slug,meta_title,meta_description,description,brand,category
+```
+
+```python
+from turkmopet_seo import audit_catalog, read_catalog_csv, write_audit_csv
+
+products = read_catalog_csv("products.csv")
+report = audit_catalog(products)
+write_audit_csv(report, "reports/seo-audit.csv")
+
+print(report.product_count)
+print(report.issue_count)
+print(report.average_score)
+```
+
+Çıktı CSV'si Excel ile açılabilir ve her sorun için şu bilgileri verir:
+
+```text
+row_number,name,slug,score,passed,severity,field,code,message
+```
+
+Mükerrer slug bir `error`, tekrar eden meta başlık ve meta açıklamalar ise `warning` olarak raporlanır. Ürün adı ve slug yalnızca okunur; hiçbir zaman yeniden yazılmaz.
+
 ## Test
 
 ```bash
@@ -57,24 +88,32 @@ CI, pull request ve `main` pushlarında Python 3.11, 3.12 ve 3.13 üzerinde çal
 ## Mimari
 
 ```text
-ProductRecord
-    ↓
-audit_product
-    ↓
-AuditResult
-    ├── score
-    └── AuditIssue[]
+CSV katalog dışa aktarımı
+        ↓
+read_catalog_csv
+        ↓
+ProductRecord[]
+        ↓
+audit_catalog
+        ├── audit_product
+        ├── mükerrer slug tespiti
+        ├── tekrar eden meta başlık tespiti
+        └── tekrar eden meta açıklama tespiti
+        ↓
+CatalogAuditReport
+        ↓
+write_audit_csv
 ```
 
-İş kuralları framework bağımsız saf Python kodunda tutulur. Bu sayede ileride CSV/Excel adaptörü, web arayüzü veya Shopify/İkas dışa aktarım işleyicisi aynı çekirdeği kullanabilir.
+İş kuralları framework bağımsız saf Python kodunda tutulur. Bu sayede ileride web arayüzü, Shopify/İkas dışa aktarım işleyicisi veya zamanlanmış raporlama aynı çekirdeği kullanabilir.
 
 ## Yol haritası
 
-1. CSV ve Excel toplu analiz
-2. Ürün, kategori ve marka raporları
-3. Tekrarlanan meta içerik tespiti
-4. İyileştirme önerileri ve şablon üretimi
-5. Search Console sorgu eşleştirmesi
+1. İkas ve Shopify kolon eşleme adaptörleri
+2. Ürün, kategori ve marka özet raporları
+3. İyileştirme önerileri ve şablon üretimi
+4. Search Console sorgu eşleştirmesi
+5. Web paneli ve zamanlanmış denetimler
 
 ## AI destekli geliştirme
 
