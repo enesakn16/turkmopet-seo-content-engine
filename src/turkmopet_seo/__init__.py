@@ -10,6 +10,14 @@ from .catalog import (
     read_catalog_csv,
     write_audit_csv,
 )
+from .search_console import (
+    ProductSearchOpportunity,
+    SearchConsoleImportError,
+    SearchConsoleRow,
+    prioritize_search_opportunities,
+    read_search_console_csv,
+    write_search_opportunities_csv,
+)
 from .suggestions import (
     FieldSuggestion,
     ProductSuggestion,
@@ -37,17 +45,23 @@ __all__ = [
     "CatalogSummary",
     "FieldSuggestion",
     "ProductRecord",
+    "ProductSearchOpportunity",
     "ProductSuggestion",
+    "SearchConsoleImportError",
+    "SearchConsoleRow",
     "Severity",
     "audit_catalog",
     "audit_product",
+    "prioritize_search_opportunities",
     "read_catalog_csv",
     "read_platform_catalog_csv",
+    "read_search_console_csv",
     "suggest_catalog_improvements",
     "suggest_product_improvements",
     "summarize_catalog",
     "write_audit_csv",
     "write_group_summary_csv",
     "write_priority_csv",
+    "write_search_opportunities_csv",
     "write_suggestions_csv",
 ]
