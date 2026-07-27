@@ -76,6 +76,36 @@ row_number,name,slug,score,passed,severity,field,code,message
 
 Mükerrer slug bir `error`, tekrar eden meta başlık ve meta açıklamalar ise `warning` olarak raporlanır. Ürün adı ve slug yalnızca okunur; hiçbir zaman yeniden yazılmaz.
 
+## Marka, kategori ve öncelik raporları
+
+Binlerce ürün içeren kataloglarda tek tek hata okumak yerine önce en problemli marka, kategori ve ürünleri görmek için `summarize_catalog` kullanılır:
+
+```python
+from turkmopet_seo import (
+    summarize_catalog,
+    write_group_summary_csv,
+    write_priority_csv,
+)
+
+summary = summarize_catalog(report, priority_limit=50)
+write_group_summary_csv(summary, "reports/group-summary.csv")
+write_priority_csv(summary, "reports/priority-products.csv")
+```
+
+Grup raporu marka ve kategorileri en düşük ortalama puandan başlayarak sıralar:
+
+```text
+dimension,name,product_count,failed_count,issue_count,average_score
+```
+
+Öncelik raporu yalnızca sorunlu ürünleri düşük puan, en yüksek önem seviyesi ve sorun sayısına göre deterministik biçimde sıralar:
+
+```text
+row_number,name,slug,brand,category,score,issue_count,highest_severity
+```
+
+`summary.issue_codes`, katalogdaki hata kodlarının toplam dağılımını en sık sorundan başlayarak verir. Boş marka veya kategori değerleri `(belirtilmemiş)` grubunda toplanır.
+
 ## Shopify ve İkas adaptörleri
 
 Ham platform dışa aktarımlarını elle kolon düzenlemeden standart `ProductRecord` şemasına çevirmek için `read_platform_catalog_csv` kullanılır:
@@ -130,19 +160,21 @@ audit_catalog
         └── tekrar eden meta açıklama tespiti
         ↓
 CatalogAuditReport
-        ↓
-write_audit_csv
+        ├── write_audit_csv
+        └── summarize_catalog
+                ├── marka ve kategori özetleri
+                ├── hata kodu dağılımı
+                └── öncelikli ürün kuyruğu
 ```
 
 İş kuralları framework bağımsız saf Python kodunda tutulur. Platform adaptörleri sadece kolon eşler; ürün adı, slug veya içerik alanlarını değiştirmez.
 
 ## Yol haritası
 
-1. Ürün, kategori ve marka özet raporları
-2. İyileştirme önerileri ve şablon üretimi
-3. Search Console sorgu eşleştirmesi
-4. Komut satırı aracı
-5. Web paneli ve zamanlanmış denetimler
+1. İyileştirme önerileri ve şablon üretimi
+2. Search Console sorgu eşleştirmesi
+3. Komut satırı aracı
+4. Web paneli ve zamanlanmış denetimler
 
 ## AI destekli geliştirme
 
