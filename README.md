@@ -106,6 +106,34 @@ row_number,name,slug,brand,category,score,issue_count,highest_severity
 
 `summary.issue_codes`, katalogdaki hata kodlarının toplam dağılımını en sık sorundan başlayarak verir. Boş marka veya kategori değerleri `(belirtilmemiş)` grubunda toplanır.
 
+## İnceleme gerektiren SEO önerileri
+
+`suggest_catalog_improvements` denetim sorunlarını alan bazlı önerilere çevirir. Ürün adı ve slug değiştirilmez. Üretilen değerler doğrudan kataloğa uygulanmaz; her satır `auto_apply_safe=False` olarak işaretlenir ve insan kontrolü gerektirir.
+
+```python
+from turkmopet_seo import (
+    suggest_catalog_improvements,
+    write_suggestions_csv,
+)
+
+suggestions = suggest_catalog_improvements(report)
+write_suggestions_csv(suggestions, "reports/seo-suggestions.csv")
+```
+
+Öneri CSV'si:
+
+```text
+row_number,name,slug,score,field,current_value,suggested_value,rationale,auto_apply_safe
+```
+
+Kurallar:
+
+- Meta başlık adayları ürün adını korur ve 60 karakteri aşmaz.
+- Meta açıklama adayları marka ve kategori bağlamını kullanır ve 160 karakteri aşmaz.
+- Ürün açıklaması için doğrulanabilir teknik özellik, uyumluluk, montaj/kullanım ve güvenlik bölümleri önerilir.
+- Kaynağı olmayan ölçü, sertifika veya model uyumluluğu üretilmez.
+- Mükerrer içerikler için yeni aday üretilir fakat otomatik güncelleme yapılmaz.
+
 ## Shopify ve İkas adaptörleri
 
 Ham platform dışa aktarımlarını elle kolon düzenlemeden standart `ProductRecord` şemasına çevirmek için `read_platform_catalog_csv` kullanılır:
@@ -161,19 +189,21 @@ audit_catalog
         ↓
 CatalogAuditReport
         ├── write_audit_csv
+        ├── suggest_catalog_improvements
+        │       └── write_suggestions_csv
         └── summarize_catalog
                 ├── marka ve kategori özetleri
                 ├── hata kodu dağılımı
                 └── öncelikli ürün kuyruğu
 ```
 
-İş kuralları framework bağımsız saf Python kodunda tutulur. Platform adaptörleri sadece kolon eşler; ürün adı, slug veya içerik alanlarını değiştirmez.
+İş kuralları framework bağımsız saf Python kodunda tutulur. Platform adaptörleri sadece kolon eşler; ürün adı, slug veya içerik alanlarını değiştirmez. Öneri katmanı da yalnızca inceleme kuyruğu üretir.
 
 ## Yol haritası
 
-1. İyileştirme önerileri ve şablon üretimi
-2. Search Console sorgu eşleştirmesi
-3. Komut satırı aracı
+1. Search Console sorgu eşleştirmesi
+2. Komut satırı aracı
+3. Onaylı önerileri platform güncelleme dosyasına dönüştürme
 4. Web paneli ve zamanlanmış denetimler
 
 ## AI destekli geliştirme
