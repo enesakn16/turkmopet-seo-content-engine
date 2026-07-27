@@ -10,18 +10,32 @@ from .catalog import (
     read_catalog_csv,
     write_audit_csv,
 )
+from .summary import (
+    CatalogGroupSummary,
+    CatalogPriorityItem,
+    CatalogSummary,
+    summarize_catalog,
+    write_group_summary_csv,
+    write_priority_csv,
+)
 
 __all__ = [
     "AuditIssue",
     "AuditResult",
     "CatalogAuditItem",
     "CatalogAuditReport",
+    "CatalogGroupSummary",
     "CatalogImportError",
+    "CatalogPriorityItem",
+    "CatalogSummary",
     "ProductRecord",
     "Severity",
     "audit_catalog",
     "audit_product",
     "read_catalog_csv",
     "read_platform_catalog_csv",
+    "summarize_catalog",
     "write_audit_csv",
+    "write_group_summary_csv",
+    "write_priority_csv",
 ]
