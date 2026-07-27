@@ -50,7 +50,7 @@ for issue in result.issues:
 
 ## CSV katalog analizi
 
-Girdi dosyası UTF-8 veya Excel uyumlu UTF-8 BOM olabilir ve şu kolonları içermelidir:
+Standart girdi dosyası UTF-8 veya Excel uyumlu UTF-8 BOM olabilir ve şu kolonları içermelidir:
 
 ```text
 name,slug,meta_title,meta_description,description,brand,category
@@ -76,6 +76,35 @@ row_number,name,slug,score,passed,severity,field,code,message
 
 Mükerrer slug bir `error`, tekrar eden meta başlık ve meta açıklamalar ise `warning` olarak raporlanır. Ürün adı ve slug yalnızca okunur; hiçbir zaman yeniden yazılmaz.
 
+## Shopify ve İkas adaptörleri
+
+Ham platform dışa aktarımlarını elle kolon düzenlemeden standart `ProductRecord` şemasına çevirmek için `read_platform_catalog_csv` kullanılır:
+
+```python
+from turkmopet_seo import audit_catalog, read_platform_catalog_csv, write_audit_csv
+
+products = read_platform_catalog_csv("shopify-products.csv", "shopify")
+report = audit_catalog(products)
+write_audit_csv(report, "reports/shopify-seo-audit.csv")
+```
+
+İkas için:
+
+```python
+products = read_platform_catalog_csv("ikas-products.csv", "ikas")
+```
+
+Shopify eşleştirmeleri:
+
+- `Title` → ürün adı
+- `Handle` → slug
+- `SEO Title` / `SEO Description` → meta alanları
+- `Body (HTML)` → ürün açıklaması
+- `Vendor` → marka
+- `Product Category`, yoksa `Type` → kategori
+
+İkas adaptörü İngilizce teknik kolon adlarının yanında `Ürün Adı`, `Seo URL`, `Meta Başlık`, `Meta Açıklama`, `Açıklama`, `Marka` ve `Kategori` gibi Türkçe başlıkları da tanır. Zorunlu bir alan eşlenemezse sessizce boş veri üretmek yerine açık `CatalogImportError` verir.
+
 ## Test
 
 ```bash
@@ -88,9 +117,9 @@ CI, pull request ve `main` pushlarında Python 3.11, 3.12 ve 3.13 üzerinde çal
 ## Mimari
 
 ```text
-CSV katalog dışa aktarımı
+Shopify / İkas / standart CSV
         ↓
-read_catalog_csv
+read_platform_catalog_csv / read_catalog_csv
         ↓
 ProductRecord[]
         ↓
@@ -105,14 +134,14 @@ CatalogAuditReport
 write_audit_csv
 ```
 
-İş kuralları framework bağımsız saf Python kodunda tutulur. Bu sayede ileride web arayüzü, Shopify/İkas dışa aktarım işleyicisi veya zamanlanmış raporlama aynı çekirdeği kullanabilir.
+İş kuralları framework bağımsız saf Python kodunda tutulur. Platform adaptörleri sadece kolon eşler; ürün adı, slug veya içerik alanlarını değiştirmez.
 
 ## Yol haritası
 
-1. İkas ve Shopify kolon eşleme adaptörleri
-2. Ürün, kategori ve marka özet raporları
-3. İyileştirme önerileri ve şablon üretimi
-4. Search Console sorgu eşleştirmesi
+1. Ürün, kategori ve marka özet raporları
+2. İyileştirme önerileri ve şablon üretimi
+3. Search Console sorgu eşleştirmesi
+4. Komut satırı aracı
 5. Web paneli ve zamanlanmış denetimler
 
 ## AI destekli geliştirme
