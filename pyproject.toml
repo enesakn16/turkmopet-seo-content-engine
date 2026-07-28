@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "turkmopet-seo-content-engine"
-version = "0.2.0"
+version = "0.3.0"
 description = "SEO quality auditing for motorcycle parts catalog content"
 readme = "README.md"
 requires-python = ">=3.11"
