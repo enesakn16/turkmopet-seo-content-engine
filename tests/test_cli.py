@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -87,6 +88,57 @@ class SeoOpportunitiesCliTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertTrue(output.exists())
+
+    def test_writes_machine_readable_run_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            catalog = root / "catalog.csv"
+            search_console = root / "search-console.csv"
+            output = root / "reports" / "opportunities.csv"
+            audit_output = root / "reports" / "audit.csv"
+            manifest_output = root / "reports" / "run-manifest.json"
+
+            catalog.write_text(
+                "name,slug,meta_title,meta_description,description,brand,category\n"
+                "Ürün,urun,Kısa başlık,Kısa açıklama,Kısa içerik,Marka,Kategori\n",
+                encoding="utf-8",
+            )
+            search_console.write_text(
+                "query,page,clicks,impressions,ctr,position\n"
+                "ürün,https://turkmopet.com/urun,1,10,0.1,4\n",
+                encoding="utf-8",
+            )
+
+            exit_code = main(
+                [
+                    "--catalog",
+                    str(catalog),
+                    "--platform",
+                    "standard",
+                    "--search-console",
+                    str(search_console),
+                    "--output",
+                    str(output),
+                    "--audit-output",
+                    str(audit_output),
+                    "--manifest-output",
+                    str(manifest_output),
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            manifest = json.loads(manifest_output.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["status"], "success")
+            self.assertEqual(manifest["inputs"]["platform"], "standard")
+            self.assertEqual(manifest["metrics"]["product_count"], 1)
+            self.assertEqual(manifest["metrics"]["traffic_opportunity_count"], 1)
+            self.assertEqual(
+                manifest["outputs"],
+                {
+                    "catalog_audit": str(audit_output),
+                    "search_opportunities": str(output),
+                },
+            )
 
     def test_returns_controlled_error_for_invalid_search_console_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
