@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .adapters import read_platform_catalog_csv
 from .catalog import CatalogImportError, audit_catalog, read_catalog_csv, write_audit_csv
+from .manifest import build_run_manifest, write_run_manifest
 from .search_console import (
     SearchConsoleImportError,
     prioritize_search_opportunities,
@@ -70,6 +71,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="İsteğe bağlı öncelikli ürün kuyruğu CSV dosyası",
     )
     parser.add_argument(
+        "--manifest-output",
+        type=Path,
+        help="İsteğe bağlı makinece okunabilir JSON çalışma özeti",
+    )
+    parser.add_argument(
         "--priority-limit",
         type=_non_negative_int,
         default=50,
@@ -90,24 +96,41 @@ def run(args: argparse.Namespace) -> int:
     write_search_opportunities_csv(opportunities, args.output)
 
     written_reports = [f"trafik fırsatı: {args.output}"]
+    output_paths: dict[str, Path] = {"search_opportunities": args.output}
 
     if args.audit_output:
         write_audit_csv(report, args.audit_output)
         written_reports.append(f"denetim: {args.audit_output}")
+        output_paths["catalog_audit"] = args.audit_output
 
     if args.suggestions_output:
         suggestions = suggest_catalog_improvements(report)
         write_suggestions_csv(suggestions, args.suggestions_output)
         written_reports.append(f"öneri: {args.suggestions_output}")
+        output_paths["seo_suggestions"] = args.suggestions_output
 
     if args.group_summary_output or args.priority_output:
         summary = summarize_catalog(report, priority_limit=args.priority_limit)
         if args.group_summary_output:
             write_group_summary_csv(summary, args.group_summary_output)
             written_reports.append(f"grup özeti: {args.group_summary_output}")
+            output_paths["group_summary"] = args.group_summary_output
         if args.priority_output:
             write_priority_csv(summary, args.priority_output)
             written_reports.append(f"öncelik: {args.priority_output}")
+            output_paths["priority_products"] = args.priority_output
+
+    if args.manifest_output:
+        manifest = build_run_manifest(
+            catalog_path=args.catalog,
+            platform=args.platform,
+            search_console_path=args.search_console,
+            report=report,
+            opportunities=opportunities,
+            outputs=output_paths,
+        )
+        write_run_manifest(manifest, args.manifest_output)
+        written_reports.append(f"manifest: {args.manifest_output}")
 
     print(
         f"{report.product_count} ürün analiz edildi; "
