@@ -21,11 +21,25 @@ class MetricDelta:
 
 
 @dataclass(frozen=True, slots=True)
+class GroupComparison:
+    dimension: str
+    name: str
+    average_score: MetricDelta
+    issue_count: MetricDelta
+    regressions: tuple[str, ...]
+
+    @property
+    def has_regression(self) -> bool:
+        return bool(self.regressions)
+
+
+@dataclass(frozen=True, slots=True)
 class ManifestComparison:
     average_score: MetricDelta
     issue_count: MetricDelta
     traffic_opportunity_count: MetricDelta
     product_count: MetricDelta
+    group_comparisons: tuple[GroupComparison, ...]
     regressions: tuple[str, ...]
 
     @property
@@ -49,6 +63,7 @@ def read_run_manifest(path: str | Path) -> dict[str, object]:
     if not isinstance(metrics, dict):
         raise ManifestComparisonError("Manifest metrics nesnesi içermelidir")
     _extract_metrics(metrics)
+    _extract_groups(data)
     return data
 
 
@@ -82,11 +97,24 @@ def compare_run_manifests(
     if issues.change > maximum_issue_increase:
         regressions.append("issue_count_increased")
 
+    group_comparisons = _compare_groups(
+        previous,
+        current,
+        minimum_score_change=minimum_score_change,
+        maximum_issue_increase=maximum_issue_increase,
+    )
+    regressions.extend(
+        f"{item.dimension}:{item.name}:{regression}"
+        for item in group_comparisons
+        for regression in item.regressions
+    )
+
     return ManifestComparison(
         average_score=score,
         issue_count=issues,
         traffic_opportunity_count=opportunities,
         product_count=products,
+        group_comparisons=group_comparisons,
         regressions=tuple(regressions),
     )
 
@@ -109,6 +137,16 @@ def write_manifest_comparison(
                 comparison.traffic_opportunity_count
             ),
         },
+        "groups": [
+            {
+                "dimension": item.dimension,
+                "name": item.name,
+                "regressions": list(item.regressions),
+                "average_score": _delta_payload(item.average_score),
+                "issue_count": _delta_payload(item.issue_count),
+            }
+            for item in comparison.group_comparisons
+        ],
     }
     output.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
@@ -141,6 +179,85 @@ def _extract_metrics(metrics: Mapping[str, object]) -> dict[str, float]:
             raise ManifestComparisonError(f"Geçersiz veya eksik metrik: {name}")
         result[name] = float(value)
     return result
+
+
+def _extract_groups(manifest: Mapping[str, object]) -> dict[tuple[str, str], dict[str, float]]:
+    raw_groups = manifest.get("groups")
+    if raw_groups is None:
+        return {}
+    if not isinstance(raw_groups, Mapping):
+        raise ManifestComparisonError("Manifest groups nesnesi geçersiz")
+
+    result: dict[tuple[str, str], dict[str, float]] = {}
+    for plural, dimension in (("brands", "brand"), ("categories", "category")):
+        entries = raw_groups.get(plural, [])
+        if not isinstance(entries, list):
+            raise ManifestComparisonError(f"Manifest groups.{plural} listesi geçersiz")
+        for entry in entries:
+            if not isinstance(entry, Mapping):
+                raise ManifestComparisonError(f"Manifest groups.{plural} girdisi geçersiz")
+            name = entry.get("name")
+            score = entry.get("average_score")
+            issues = entry.get("issue_count")
+            if not isinstance(name, str) or not name.strip():
+                raise ManifestComparisonError(f"Manifest groups.{plural} adı geçersiz")
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                raise ManifestComparisonError(f"Manifest groups.{plural} skoru geçersiz")
+            if isinstance(issues, bool) or not isinstance(issues, (int, float)):
+                raise ManifestComparisonError(f"Manifest groups.{plural} sorun sayısı geçersiz")
+            key = (dimension, name)
+            if key in result:
+                raise ManifestComparisonError(f"Tekrarlı grup girdisi: {dimension}:{name}")
+            result[key] = {
+                "average_score": float(score),
+                "issue_count": float(issues),
+            }
+    return result
+
+
+def _compare_groups(
+    previous: Mapping[str, object],
+    current: Mapping[str, object],
+    *,
+    minimum_score_change: float,
+    maximum_issue_increase: int,
+) -> tuple[GroupComparison, ...]:
+    previous_groups = _extract_groups(previous)
+    current_groups = _extract_groups(current)
+    comparisons: list[GroupComparison] = []
+
+    for dimension, name in sorted(previous_groups.keys() & current_groups.keys()):
+        before = previous_groups[(dimension, name)]
+        after = current_groups[(dimension, name)]
+        score = MetricDelta(before["average_score"], after["average_score"])
+        issues = MetricDelta(before["issue_count"], after["issue_count"])
+        regressions: list[str] = []
+        if score.change < -minimum_score_change:
+            regressions.append("average_score_decreased")
+        if issues.change > maximum_issue_increase:
+            regressions.append("issue_count_increased")
+        comparisons.append(
+            GroupComparison(
+                dimension=dimension,
+                name=name,
+                average_score=score,
+                issue_count=issues,
+                regressions=tuple(regressions),
+            )
+        )
+
+    return tuple(
+        sorted(
+            comparisons,
+            key=lambda item: (
+                not item.has_regression,
+                item.average_score.change,
+                -item.issue_count.change,
+                item.dimension,
+                item.name.casefold(),
+            ),
+        )
+    )
 
 
 def _delta_payload(delta: MetricDelta) -> dict[str, float]:
