@@ -13,7 +13,7 @@ from turkmopet_seo.search_console import ProductSearchOpportunity
 
 
 class RunManifestTests(unittest.TestCase):
-    def test_builds_stable_manifest_with_metrics_and_sorted_outputs(self) -> None:
+    def test_builds_stable_manifest_with_metrics_groups_and_sorted_outputs(self) -> None:
         report = audit_catalog(
             (
                 ProductRecord(
@@ -62,6 +62,13 @@ class RunManifestTests(unittest.TestCase):
         self.assertEqual(manifest["metrics"]["product_count"], 1)
         self.assertEqual(manifest["metrics"]["issue_count"], report.issue_count)
         self.assertEqual(manifest["metrics"]["traffic_opportunity_count"], 1)
+        self.assertEqual(manifest["groups"]["brands"][0]["name"], "TVS")
+        self.assertEqual(manifest["groups"]["brands"][0]["product_count"], 1)
+        self.assertEqual(manifest["groups"]["categories"][0]["name"], "Fren")
+        self.assertEqual(
+            manifest["groups"]["categories"][0]["average_score"],
+            report.average_score,
+        )
         self.assertEqual(
             list(manifest["outputs"]),
             ["catalog_audit", "search_opportunities"],
