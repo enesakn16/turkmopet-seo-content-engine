@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "turkmopet-seo-content-engine"
+version = "0.4.0"
+description = "SEO quality auditing for motorcycle parts catalog content"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Enes Akın" }]
+keywords = ["seo", "ecommerce", "motorcycle-parts", "catalog"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.scripts]
+seo-opportunities = "turkmopet_seo.cli:main"
+seo-compare-runs = "turkmopet_seo.comparison_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
