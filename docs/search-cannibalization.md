@@ -28,10 +28,20 @@ seo-cannibalization \
 
 Rapor, kritik sorguları ve yüksek gösterimli kümeleri önce sıralar. Her sorgu için tüm rekabet eden URL'ler ayrı satırlarda yazılır.
 
+## Önerilen aksiyonlar
+
+Araç, her çakışmaya açıklanabilir bir `action_type` ve insan tarafından uygulanacak `recommended_action` ekler:
+
+- `consolidate_or_canonical_review`: Talep ciddi biçimde bölünmüşse veya üçten fazla URL yarışıyorsa sayfaları birleştirme ya da canonical kararını incele.
+- `separate_search_intent`: İki URL arasında orta seviyeli rekabet varsa başlık, içerik ve iç bağlantıları farklı arama niyetlerine göre ayrıştır.
+- `strengthen_leading_page`: Bir URL açıkça liderse iç bağlantıları lider URL'ye yoğunlaştır ve ikincil URL'nin gereksiz sorgu eşleşmesini incele.
+
+Bu öneriler otomatik değişiklik yapmaz. Canonical, yönlendirme, ürün birleştirme veya içerik düzenleme kararı uygulanmadan önce URL'lerin ticari amacı doğrulanmalıdır.
+
 ## Çıktı alanları
 
 ```text
-query,severity,page_count,total_clicks,total_impressions,leading_page,leading_share,page,slug,clicks,impressions,ctr,average_position
+query,severity,action_type,recommended_action,page_count,total_clicks,total_impressions,leading_page,leading_share,page,slug,clicks,impressions,ctr,average_position
 ```
 
 CSV UTF-8 BOM ile üretilir ve Excel'de doğrudan açılabilir.
