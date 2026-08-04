@@ -28,6 +28,8 @@ class CannibalizationConflict:
     leading_page: str
     leading_share: float
     severity: str
+    action_type: str
+    recommended_action: str
     pages: tuple[CannibalizationPage, ...]
 
 
@@ -43,6 +45,25 @@ def _normalized_page(value: str) -> str:
 
 def _slug(page: str) -> str:
     return page.rstrip("/").rsplit("/", 1)[-1] or "/"
+
+
+def _recommended_action(
+    *, page_count: int, leading_share: float, leading_page: str
+) -> tuple[str, str]:
+    if page_count >= 3 or leading_share < 0.60:
+        return (
+            "consolidate_or_canonical_review",
+            "Sayfaların arama niyetini karşılaştır; aynı amacı taşıyanları birleştir veya canonical kararını doğrula.",
+        )
+    if leading_share < 0.80:
+        return (
+            "separate_search_intent",
+            "Lider ve ikincil sayfaların başlık, içerik ve iç bağlantılarını farklı arama niyetlerine göre ayrıştır.",
+        )
+    return (
+        "strengthen_leading_page",
+        f"İç bağlantıları {leading_page} adresine yoğunlaştır ve ikincil URL'nin sorguyla gereksiz eşleşmesini incele.",
+    )
 
 
 def detect_cannibalization(
@@ -95,6 +116,11 @@ def detect_cannibalization(
             severity = "warning"
         else:
             severity = "review"
+        action_type, recommended_action = _recommended_action(
+            page_count=len(page_metrics),
+            leading_share=leading_share,
+            leading_page=leader.page,
+        )
 
         conflicts.append(CannibalizationConflict(
             query=labels[query_key],
@@ -104,6 +130,8 @@ def detect_cannibalization(
             leading_page=leader.page,
             leading_share=round(leading_share, 4),
             severity=severity,
+            action_type=action_type,
+            recommended_action=recommended_action,
             pages=tuple(page_metrics),
         ))
 
@@ -120,9 +148,9 @@ def write_cannibalization_csv(
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     fields = (
-        "query", "severity", "page_count", "total_clicks", "total_impressions",
-        "leading_page", "leading_share", "page", "slug", "clicks", "impressions",
-        "ctr", "average_position",
+        "query", "severity", "action_type", "recommended_action", "page_count",
+        "total_clicks", "total_impressions", "leading_page", "leading_share", "page",
+        "slug", "clicks", "impressions", "ctr", "average_position",
     )
     with output.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -132,6 +160,8 @@ def write_cannibalization_csv(
                 writer.writerow({
                     "query": conflict.query,
                     "severity": conflict.severity,
+                    "action_type": conflict.action_type,
+                    "recommended_action": conflict.recommended_action,
                     "page_count": conflict.page_count,
                     "total_clicks": conflict.total_clicks,
                     "total_impressions": conflict.total_impressions,
