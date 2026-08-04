@@ -22,9 +22,20 @@ class CannibalizationTests(unittest.TestCase):
         self.assertEqual(conflict.page_count, 2)
         self.assertEqual(conflict.total_impressions, 220)
         self.assertEqual(conflict.severity, "critical")
+        self.assertEqual(conflict.action_type, "consolidate_or_canonical_review")
         self.assertEqual([page.slug for page in conflict.pages], ["a", "b"])
 
-    def test_marks_dominant_page_as_review(self) -> None:
+    def test_recommends_intent_separation_for_warning_conflict(self) -> None:
+        rows = (
+            SearchConsoleRow("pcx siperlik", "/lider", 20, 650, 0.03, 5),
+            SearchConsoleRow("pcx siperlik", "/ikincil", 8, 350, 0.02, 9),
+        )
+        conflict = detect_cannibalization(rows)[0]
+        self.assertEqual(conflict.severity, "warning")
+        self.assertEqual(conflict.action_type, "separate_search_intent")
+        self.assertIn("arama niyetlerine", conflict.recommended_action)
+
+    def test_marks_dominant_page_and_strengthens_leader(self) -> None:
         rows = (
             SearchConsoleRow("yağ filtresi", "/ana", 30, 900, 0.03, 3),
             SearchConsoleRow("yağ filtresi", "/ikincil", 1, 100, 0.01, 16),
@@ -32,6 +43,18 @@ class CannibalizationTests(unittest.TestCase):
         conflict = detect_cannibalization(rows)[0]
         self.assertEqual(conflict.severity, "review")
         self.assertEqual(conflict.leading_share, 0.9)
+        self.assertEqual(conflict.action_type, "strengthen_leading_page")
+        self.assertIn("/ana", conflict.recommended_action)
+
+    def test_three_pages_trigger_consolidation_review(self) -> None:
+        rows = (
+            SearchConsoleRow("cub egzoz", "/a", 10, 700, 0.01, 5),
+            SearchConsoleRow("cub egzoz", "/b", 2, 100, 0.02, 10),
+            SearchConsoleRow("cub egzoz", "/c", 1, 100, 0.01, 15),
+        )
+        conflict = detect_cannibalization(rows)[0]
+        self.assertEqual(conflict.severity, "review")
+        self.assertEqual(conflict.action_type, "consolidate_or_canonical_review")
 
     def test_respects_thresholds_and_rejects_invalid_config(self) -> None:
         rows = (
@@ -42,7 +65,7 @@ class CannibalizationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             detect_cannibalization(rows, minimum_pages=1)
 
-    def test_writes_excel_compatible_csv(self) -> None:
+    def test_writes_excel_compatible_csv_with_action_fields(self) -> None:
         conflicts = detect_cannibalization((
             SearchConsoleRow("a", "/a", 2, 80, 0.025, 5),
             SearchConsoleRow("a", "/b", 1, 70, 0.014, 8),
@@ -55,6 +78,8 @@ class CannibalizationTests(unittest.TestCase):
                 rows = list(csv.DictReader(handle))
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[0]["severity"], "critical")
+            self.assertEqual(rows[0]["action_type"], "consolidate_or_canonical_review")
+            self.assertTrue(rows[0]["recommended_action"])
 
     def test_cli_returns_warning_code_when_conflicts_exist(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
