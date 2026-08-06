@@ -56,6 +56,28 @@ class CannibalizationTests(unittest.TestCase):
         self.assertEqual(conflict.severity, "review")
         self.assertEqual(conflict.action_type, "consolidate_or_canonical_review")
 
+    def test_filters_low_signal_pages_before_classification(self) -> None:
+        rows = (
+            SearchConsoleRow("pcx cam", "/ana", 12, 95, 0.126, 4),
+            SearchConsoleRow("pcx cam", "/noise", 0, 5, 0.0, 47),
+        )
+        self.assertEqual(detect_cannibalization(rows), ())
+
+        conflicts = detect_cannibalization(rows, minimum_page_impressions=5)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].page_count, 2)
+        self.assertEqual(conflicts[0].total_impressions, 100)
+
+    def test_aggregates_rows_before_applying_page_threshold(self) -> None:
+        rows = (
+            SearchConsoleRow("kask camı", "/a", 3, 40, 0.075, 5),
+            SearchConsoleRow("kask camı", "/b", 0, 6, 0.0, 12),
+            SearchConsoleRow("kask camı", "/b", 1, 5, 0.2, 11),
+        )
+        conflict = detect_cannibalization(rows)[0]
+        self.assertEqual(conflict.page_count, 2)
+        self.assertEqual(conflict.total_impressions, 51)
+
     def test_respects_thresholds_and_rejects_invalid_config(self) -> None:
         rows = (
             SearchConsoleRow("a", "/a", 1, 20, 0.05, 5),
@@ -64,6 +86,14 @@ class CannibalizationTests(unittest.TestCase):
         self.assertEqual(detect_cannibalization(rows), ())
         with self.assertRaises(ValueError):
             detect_cannibalization(rows, minimum_pages=1)
+        with self.assertRaises(ValueError):
+            detect_cannibalization(rows, minimum_page_impressions=0)
+        with self.assertRaises(ValueError):
+            detect_cannibalization(
+                rows,
+                minimum_impressions=20,
+                minimum_page_impressions=21,
+            )
 
     def test_writes_excel_compatible_csv_with_action_fields(self) -> None:
         conflicts = detect_cannibalization((
@@ -93,6 +123,26 @@ class CannibalizationTests(unittest.TestCase):
             )
             self.assertEqual(main(["--input", str(source), "--output", str(output)]), 1)
             self.assertTrue(output.exists())
+
+    def test_cli_accepts_custom_page_signal_threshold(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "search.csv"
+            output = Path(directory) / "report.csv"
+            source.write_text(
+                "query,page,clicks,impressions,ctr,position\n"
+                "pcx cam,https://turkmopet.com/a,4,45,8%,7\n"
+                "pcx cam,https://turkmopet.com/b,1,5,20%,9\n",
+                encoding="utf-8-sig",
+            )
+            self.assertEqual(main(["--input", str(source), "--output", str(output)]), 0)
+            self.assertEqual(
+                main([
+                    "--input", str(source),
+                    "--output", str(output),
+                    "--minimum-page-impressions", "5",
+                ]),
+                1,
+            )
 
 
 if __name__ == "__main__":
