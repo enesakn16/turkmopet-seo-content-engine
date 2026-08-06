@@ -14,6 +14,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True, help="Çıktı CSV dosyası")
     parser.add_argument("--minimum-impressions", type=int, default=50)
     parser.add_argument("--minimum-pages", type=int, default=2)
+    parser.add_argument(
+        "--minimum-page-impressions",
+        type=int,
+        default=10,
+        help="Bir URL'nin sorgu kümesine alınması için gereken minimum gösterim",
+    )
     return parser
 
 
@@ -25,6 +31,7 @@ def main(argv: list[str] | None = None) -> int:
             rows,
             minimum_impressions=args.minimum_impressions,
             minimum_pages=args.minimum_pages,
+            minimum_page_impressions=args.minimum_page_impressions,
         )
         write_cannibalization_csv(conflicts, args.output)
     except (SearchConsoleImportError, ValueError) as exc:
