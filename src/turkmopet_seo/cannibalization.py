@@ -71,11 +71,18 @@ def detect_cannibalization(
     *,
     minimum_impressions: int = 50,
     minimum_pages: int = 2,
+    minimum_page_impressions: int = 10,
 ) -> tuple[CannibalizationConflict, ...]:
     if minimum_impressions < 1:
         raise ValueError("minimum_impressions en az 1 olmalıdır.")
     if minimum_pages < 2:
         raise ValueError("minimum_pages en az 2 olmalıdır.")
+    if minimum_page_impressions < 1:
+        raise ValueError("minimum_page_impressions en az 1 olmalıdır.")
+    if minimum_page_impressions > minimum_impressions:
+        raise ValueError(
+            "minimum_page_impressions, minimum_impressions değerinden büyük olamaz."
+        )
 
     grouped: dict[str, dict[str, list[SearchConsoleRow]]] = {}
     labels: dict[str, str] = {}
@@ -92,6 +99,8 @@ def detect_cannibalization(
         page_metrics: list[CannibalizationPage] = []
         for page, values in page_rows.items():
             impressions = sum(item.impressions for item in values)
+            if impressions < minimum_page_impressions:
+                continue
             clicks = sum(item.clicks for item in values)
             weighted_position = sum(item.position * item.impressions for item in values) / impressions
             page_metrics.append(CannibalizationPage(
