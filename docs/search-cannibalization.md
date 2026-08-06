@@ -1,6 +1,6 @@
 # Search Console anahtar kelime kanibalizasyon raporu
 
-Aynı sorgunun birden fazla ürün veya kategori sayfasına dağılması, Google'ın hangi URL'yi öne çıkaracağı konusunda kararsız kaldığını gösterebilir. `seo-cannibalization` Search Console CSV dışa aktarımını sorgu ve normalize edilmiş URL yolu bazında toplar; aynı sorguda en az iki sayfa bulunan kümeleri raporlar.
+Aynı sorgunun birden fazla ürün veya kategori sayfasına dağılması, Google'ın hangi URL'yi öne çıkaracağı konusunda kararsız kaldığını gösterebilir. `seo-cannibalization` Search Console CSV dışa aktarımını sorgu ve normalize edilmiş URL yolu bazında toplar; aynı sorguda en az iki anlamlı sayfa bulunan kümeleri raporlar.
 
 ## Kullanım
 
@@ -10,15 +10,18 @@ seo-cannibalization \
   --output reports/cannibalization.csv
 ```
 
-Varsayılan olarak toplam gösterimi 50'nin altında kalan sorgular ve yalnızca tek sayfası olan sorgular rapora alınmaz. Eşikler değiştirilebilir:
+Varsayılan olarak toplam gösterimi 50'nin altında kalan sorgular, yalnızca tek anlamlı sayfası olan sorgular ve 10 gösterimin altında kalan düşük sinyalli URL'ler rapora alınmaz. Eşikler değiştirilebilir:
 
 ```bash
 seo-cannibalization \
   --input exports/search-console.csv \
   --output reports/cannibalization.csv \
   --minimum-impressions 100 \
-  --minimum-pages 2
+  --minimum-pages 2 \
+  --minimum-page-impressions 20
 ```
+
+`--minimum-page-impressions`, aynı sorguda tesadüfen birkaç kez görünen filtre, parametreli sayfa veya zayıf URL'lerin sahte kanibalizasyon üretmesini engeller. Aynı URL'ye ait birden fazla Search Console satırı önce toplanır, eşik daha sonra uygulanır. Bu değer `--minimum-impressions` değerinden büyük olamaz.
 
 ## Öncelik sınıfları
 
@@ -26,7 +29,7 @@ seo-cannibalization \
 - `warning`: Lider sayfanın payı %60–80 arasında.
 - `review`: Lider sayfa %80 veya daha fazla paya sahip; ikincil URL yine de incelenmeli.
 
-Rapor, kritik sorguları ve yüksek gösterimli kümeleri önce sıralar. Her sorgu için tüm rekabet eden URL'ler ayrı satırlarda yazılır.
+Rapor, kritik sorguları ve yüksek gösterimli kümeleri önce sıralar. Her sorgu için eşik üstünde kalan rekabet eden URL'ler ayrı satırlarda yazılır.
 
 ## Önerilen aksiyonlar
 
