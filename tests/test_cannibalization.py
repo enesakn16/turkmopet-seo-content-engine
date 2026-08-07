@@ -53,7 +53,7 @@ class CannibalizationTests(unittest.TestCase):
             SearchConsoleRow("cub egzoz", "/c", 1, 100, 0.01, 15),
         )
         conflict = detect_cannibalization(rows)[0]
-        self.assertEqual(conflict.severity, "review")
+        self.assertEqual(conflict.severity, "warning")
         self.assertEqual(conflict.action_type, "consolidate_or_canonical_review")
 
     def test_filters_low_signal_pages_before_classification(self) -> None:
