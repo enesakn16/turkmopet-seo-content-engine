@@ -50,7 +50,7 @@ def _slug(page: str) -> str:
 def _recommended_action(
     *, page_count: int, leading_share: float, leading_page: str
 ) -> tuple[str, str]:
-    if page_count >= 3 or leading_share < 0.60:
+    if leading_share < 0.60 or (page_count >= 3 and leading_share < 0.80):
         return (
             "consolidate_or_canonical_review",
             "Sayfaların arama niyetini karşılaştır; aynı amacı taşıyanları birleştir veya canonical kararını doğrula.",
