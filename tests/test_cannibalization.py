@@ -46,7 +46,7 @@ class CannibalizationTests(unittest.TestCase):
         self.assertEqual(conflict.action_type, "strengthen_leading_page")
         self.assertIn("/ana", conflict.recommended_action)
 
-    def test_three_pages_trigger_consolidation_review(self) -> None:
+    def test_three_pages_trigger_consolidation_review_when_demand_is_split(self) -> None:
         rows = (
             SearchConsoleRow("cub egzoz", "/a", 10, 700, 0.01, 5),
             SearchConsoleRow("cub egzoz", "/b", 2, 100, 0.02, 10),
@@ -55,6 +55,18 @@ class CannibalizationTests(unittest.TestCase):
         conflict = detect_cannibalization(rows)[0]
         self.assertEqual(conflict.severity, "warning")
         self.assertEqual(conflict.action_type, "consolidate_or_canonical_review")
+
+    def test_three_pages_do_not_force_consolidation_when_one_page_dominates(self) -> None:
+        rows = (
+            SearchConsoleRow("pcx yağ filtresi", "/ana", 30, 900, 0.033, 3),
+            SearchConsoleRow("pcx yağ filtresi", "/ikincil", 1, 50, 0.02, 14),
+            SearchConsoleRow("pcx yağ filtresi", "/ucuncu", 0, 50, 0.0, 18),
+        )
+        conflict = detect_cannibalization(rows)[0]
+        self.assertEqual(conflict.page_count, 3)
+        self.assertEqual(conflict.severity, "review")
+        self.assertEqual(conflict.leading_share, 0.9)
+        self.assertEqual(conflict.action_type, "strengthen_leading_page")
 
     def test_filters_low_signal_pages_before_classification(self) -> None:
         rows = (
