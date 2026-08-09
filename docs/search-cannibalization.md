@@ -1,6 +1,8 @@
 # Search Console anahtar kelime kanibalizasyon raporu
 
-Aynı sorgunun birden fazla ürün veya kategori sayfasına dağılması, Google'ın hangi URL'yi öne çıkaracağı konusunda kararsız kaldığını gösterebilir. `seo-cannibalization` Search Console CSV dışa aktarımını sorgu ve normalize edilmiş URL yolu bazında toplar; aynı sorguda en az iki anlamlı sayfa bulunan kümeleri raporlar.
+Aynı sorgunun birden fazla ürün veya kategori sayfasına dağılması, Google'ın hangi URL'yi öne çıkaracağı konusunda kararsız kaldığını gösterebilir. `seo-cannibalization` Search Console CSV dışa aktarımını sorgu ve normalize edilmiş URL kimliği bazında toplar; aynı sorguda en az iki anlamlı sayfa bulunan kümeleri raporlar.
+
+Mutlak URL'lerde host bilgisi korunur. Böylece `turkmopet.com/urun/x` ile `www.turkmopet.com/urun/x` veya başka bir subdomain'deki aynı path yanlışlıkla tek sayfa gibi birleştirilmez. `http` ve `https` şeması kimliğin parçası değildir; query string ve fragment değerleri de sayfa kimliğine dahil edilmez.
 
 ## Kullanım
 
