@@ -40,7 +40,10 @@ def _normalized_query(value: str) -> str:
 def _normalized_page(value: str) -> str:
     parsed = urlparse((value or "").strip())
     path = unquote(parsed.path).rstrip("/") or "/"
-    return path.casefold()
+    normalized_path = path.casefold()
+    if parsed.netloc:
+        return f"{parsed.netloc.casefold()}{normalized_path}"
+    return normalized_path
 
 
 def _slug(page: str) -> str:
