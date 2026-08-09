@@ -25,6 +25,20 @@ class CannibalizationTests(unittest.TestCase):
         self.assertEqual(conflict.action_type, "consolidate_or_canonical_review")
         self.assertEqual([page.slug for page in conflict.pages], ["a", "b"])
 
+    def test_keeps_same_path_on_different_hosts_distinct(self) -> None:
+        rows = (
+            SearchConsoleRow("pcx cam", "https://turkmopet.com/urun/pcx-cam", 5, 80, 0.0625, 6),
+            SearchConsoleRow("pcx cam", "https://www.turkmopet.com/urun/pcx-cam", 4, 70, 0.0571, 8),
+        )
+        conflicts = detect_cannibalization(rows)
+        self.assertEqual(len(conflicts), 1)
+        conflict = conflicts[0]
+        self.assertEqual(conflict.page_count, 2)
+        self.assertEqual(
+            {page.page for page in conflict.pages},
+            {"turkmopet.com/urun/pcx-cam", "www.turkmopet.com/urun/pcx-cam"},
+        )
+
     def test_recommends_intent_separation_for_warning_conflict(self) -> None:
         rows = (
             SearchConsoleRow("pcx siperlik", "/lider", 20, 650, 0.03, 5),
