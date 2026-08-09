@@ -2,6 +2,12 @@
 
 from .adapters import read_platform_catalog_csv
 from .audit import AuditIssue, AuditResult, ProductRecord, Severity, audit_product
+from .cannibalization import (
+    CannibalizationConflict,
+    CannibalizationPage,
+    detect_cannibalization,
+    write_cannibalization_csv,
+)
 from .catalog import (
     CatalogAuditItem,
     CatalogAuditReport,
@@ -45,6 +51,8 @@ from .summary import (
 __all__ = [
     "AuditIssue",
     "AuditResult",
+    "CannibalizationConflict",
+    "CannibalizationPage",
     "CatalogAuditItem",
     "CatalogAuditReport",
     "CatalogGroupSummary",
@@ -64,6 +72,7 @@ __all__ = [
     "audit_catalog",
     "audit_product",
     "compare_run_manifests",
+    "detect_cannibalization",
     "prioritize_search_opportunities",
     "read_catalog_csv",
     "read_platform_catalog_csv",
@@ -73,6 +82,7 @@ __all__ = [
     "suggest_product_improvements",
     "summarize_catalog",
     "write_audit_csv",
+    "write_cannibalization_csv",
     "write_group_summary_csv",
     "write_manifest_comparison",
     "write_priority_csv",

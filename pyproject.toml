@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "turkmopet-seo-content-engine"
-version = "0.4.0"
+version = "0.5.0"
 description = "SEO quality auditing for motorcycle parts catalog content"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,6 +19,7 @@ classifiers = [
 [project.scripts]
 seo-opportunities = "turkmopet_seo.cli:main"
 seo-compare-runs = "turkmopet_seo.comparison_cli:main"
+seo-cannibalization = "turkmopet_seo.cannibalization_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
